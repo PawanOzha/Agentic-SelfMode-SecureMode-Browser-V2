@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(nul)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout 5:*)",
+      "Bash(ping:*)",
+      "Bash(dir:*)",
+      "Bash(if not exist srccomponents mkdir srccomponents)",
+      "Bash(if not exist srctypes mkdir srctypes)",
+      "Bash(if not exist srcutils mkdir srcutils)",
+      "Bash(if not exist srcservices mkdir srcservices)",
+      "Bash(taskkill:*)",
+      "Bash(exit 0)",
+      "Bash(curl:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)",
+      "Bash(timeout:*)",
+      "Bash(\"src/components/TabBar.tsx\")",
+      "Bash(node scripts/security-check.js:*)",
+      "Bash(findstr:*)",
+      "Bash(copy electronmain.ts electronmain-BACKUP.ts)",
+      "Bash(copy electronpreload.ts electronpreload-BACKUP.ts)",
+      "Bash(copy electronmain-secure.ts electronmain.ts /Y)",
+      "Bash(copy:*)",
+      "Bash(node scripts/security-check.cjs:*)",
+      "Bash(npx kill-port:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
