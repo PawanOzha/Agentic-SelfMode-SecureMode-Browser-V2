@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, session, protocol } from 'electron';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { autoUpdater } from 'electron-updater';
 import {
   initializeDatabase,
   saveSequence,
@@ -248,7 +249,7 @@ function createWindow() {
     if (input.type === 'keyDown' && input.control && (input.key?.toLowerCase?.() === 'r')) {
       event.preventDefault();
       const hard = !!input.shift;
-      win.webContents.send('shortcut-reload', { hard });
+      win?.webContents.send('shortcut-reload', { hard });
     }
   });
 
@@ -525,4 +526,131 @@ app.on('web-contents-created', (_event, contents) => {
       console.warn('DevTools opened in production mode');
     }
   });
+});
+
+// ==================== AUTO-UPDATE FUNCTIONALITY ====================
+function setupAutoUpdater() {
+  // Configure auto-updater
+  autoUpdater.autoDownload = false; // Don't auto-download, let user decide
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  // Log update events
+  autoUpdater.logger = {
+    info: (message: any) => console.log('[AutoUpdater]', message),
+    warn: (message: any) => console.warn('[AutoUpdater]', message),
+    error: (message: any) => console.error('[AutoUpdater]', message),
+    debug: (message: any) => console.log('[AutoUpdater Debug]', message),
+  };
+
+  // Update checking events
+  autoUpdater.on('checking-for-update', () => {
+    console.log('[AutoUpdater] Checking for updates...');
+    win?.webContents.send('update-status', { status: 'checking' });
+  });
+
+  autoUpdater.on('update-available', (info) => {
+    console.log('[AutoUpdater] Update available:', info.version);
+    win?.webContents.send('update-status', {
+      status: 'available',
+      version: info.version,
+      releaseNotes: info.releaseNotes,
+      releaseDate: info.releaseDate
+    });
+  });
+
+  autoUpdater.on('update-not-available', (info) => {
+    console.log('[AutoUpdater] No update available. Current version:', info.version);
+    win?.webContents.send('update-status', {
+      status: 'not-available',
+      version: info.version
+    });
+  });
+
+  autoUpdater.on('download-progress', (progressObj) => {
+    const percent = Math.round(progressObj.percent);
+    console.log(`[AutoUpdater] Download progress: ${percent}%`);
+    win?.webContents.send('update-status', {
+      status: 'downloading',
+      percent: percent,
+      bytesPerSecond: progressObj.bytesPerSecond,
+      transferred: progressObj.transferred,
+      total: progressObj.total
+    });
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    console.log('[AutoUpdater] Update downloaded:', info.version);
+    win?.webContents.send('update-status', {
+      status: 'downloaded',
+      version: info.version
+    });
+  });
+
+  autoUpdater.on('error', (err) => {
+    console.error('[AutoUpdater] Error:', err);
+    win?.webContents.send('update-status', {
+      status: 'error',
+      error: err.message
+    });
+  });
+
+  // Check for updates after app is ready (only in production)
+  if (app.isPackaged) {
+    // Check for updates on startup after a short delay
+    setTimeout(() => {
+      autoUpdater.checkForUpdates().catch(err => {
+        console.error('[AutoUpdater] Failed to check for updates:', err);
+      });
+    }, 3000);
+
+    // Also check periodically (every 4 hours)
+    setInterval(() => {
+      autoUpdater.checkForUpdates().catch(err => {
+        console.error('[AutoUpdater] Failed to check for updates:', err);
+      });
+    }, 4 * 60 * 60 * 1000);
+  }
+}
+
+// ==================== AUTO-UPDATE IPC HANDLERS ====================
+ipcMain.handle('update:check', async () => {
+  if (!app.isPackaged) {
+    return { success: false, error: 'Updates only available in production builds' };
+  }
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    return { success: true, updateInfo: result?.updateInfo };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('update:download', async () => {
+  if (!app.isPackaged) {
+    return { success: false, error: 'Updates only available in production builds' };
+  }
+  try {
+    await autoUpdater.downloadUpdate();
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('update:install', async () => {
+  if (!app.isPackaged) {
+    return { success: false, error: 'Updates only available in production builds' };
+  }
+  // Quit and install the update
+  autoUpdater.quitAndInstall(false, true);
+  return { success: true };
+});
+
+ipcMain.handle('app:getVersion', async () => {
+  return { version: app.getVersion() };
+});
+
+// Initialize auto-updater after app is ready
+app.whenReady().then(() => {
+  setupAutoUpdater();
 });

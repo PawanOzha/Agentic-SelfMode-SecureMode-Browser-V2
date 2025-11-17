@@ -7,6 +7,7 @@ import AISidebar from './components/AISidebar-new';
 import SettingsModal from './components/SettingsModal';
 import BookmarksBar from './components/BookmarksBar';
 import AgentBar from './components/AgentBar';
+import { UpdateNotification } from './components/UpdateNotification';
 import { WebViewRef } from './types';
 import { useTaskStore } from './store/taskStore';
 
@@ -672,6 +673,9 @@ export default function ModernBrowser() {
           aiSidebarOpen={aiSidebarOpen}
         />
       )}
+
+      {/* Auto-Update Notification */}
+      <UpdateNotification />
     </>
   );
 }

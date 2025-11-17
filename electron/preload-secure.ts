@@ -20,11 +20,16 @@ const ALLOWED_INVOKE_CHANNELS = [
   'webview:find',
   'webview:click',
   'webview:scroll',
+  'update:check',
+  'update:download',
+  'update:install',
+  'app:getVersion',
 ] as const;
 
 const ALLOWED_ON_CHANNELS = [
   'main-process-message',
   'shortcut-reload',
+  'update-status',
 ] as const;
 
 type AllowedSendChannel = typeof ALLOWED_SEND_CHANNELS[number];
@@ -262,6 +267,44 @@ contextBridge.exposeInMainWorld('securityUtils', {
     return '1.0.0'; // Replace with actual version from package.json
   },
 });
+
+// ==================== AUTO-UPDATE API ====================
+interface UpdateAPI {
+  check(): Promise<{ success: boolean; updateInfo?: any; error?: string }>;
+  download(): Promise<{ success: boolean; error?: string }>;
+  install(): Promise<{ success: boolean; error?: string }>;
+  onStatus(callback: (status: any) => void): () => void;
+  getVersion(): Promise<{ version: string }>;
+}
+
+contextBridge.exposeInMainWorld('autoUpdate', {
+  check: () => {
+    return safeIpcRenderer.invoke('update:check');
+  },
+
+  download: () => {
+    return safeIpcRenderer.invoke('update:download');
+  },
+
+  install: () => {
+    return safeIpcRenderer.invoke('update:install');
+  },
+
+  onStatus: (callback: (status: any) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, status: any) => {
+      callback(status);
+    };
+    safeIpcRenderer.on('update-status', listener);
+    // Return cleanup function
+    return () => {
+      safeIpcRenderer.off('update-status', listener);
+    };
+  },
+
+  getVersion: () => {
+    return safeIpcRenderer.invoke('app:getVersion');
+  },
+} satisfies UpdateAPI);
 
 // ==================== SECURITY: Freeze Prototypes ====================
 // Prevent renderer from modifying Object.prototype, Array.prototype, etc.
