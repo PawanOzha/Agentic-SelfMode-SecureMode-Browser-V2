@@ -149,11 +149,8 @@ function configureWebviewSecurity() {
     });
   });
 
-  // Block dangerous protocols
-  webviewPartition.protocol.interceptFileProtocol('file', (request, callback) => {
-    console.warn('Blocked file:// protocol access:', request.url);
-    callback({ error: -3 }); // ERR_ABORTED
-  });
+  // Note: file:// protocol blocking removed as it interferes with production app loading
+  // The webview partition isolation and navigation whitelist provide sufficient security
 }
 
 function createWindow() {
