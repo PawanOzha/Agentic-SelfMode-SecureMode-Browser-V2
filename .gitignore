@@ -30,6 +30,7 @@ Thumbs.db
 nul
 
 # Documentation files (keep only essential ones)
+docs/
 Adit.md
 AI-PROVIDERS.md
 IMPLEMENTATION.md
@@ -47,6 +48,14 @@ SECURITY_AUDIT_REPORT.md
 START_APP.md
 TESTING.md
 WHITE_SCREEN_FIX.md
+
+# Other unnecessary files
+*.json.backup
+spacemail_passwords_*.json
+cPanel_*.js
+.env.example
+Python_notify_Watcher/
+.claude/
 
 # Environment files
 .env
